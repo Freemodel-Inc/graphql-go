@@ -22,6 +22,7 @@ type Request struct {
 	selected.Request
 	Limiter                  chan struct{}
 	Tracer                   tracer.Tracer
+	Localizer                errors.Localizer
 	Logger                   log.Logger
 	PanicHandler             errors.PanicHandler
 	SubscribeResolverTimeout time.Duration
@@ -244,6 +245,9 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 
 		res, resolverErr := f.resolve(ctx)
 		if resolverErr != nil {
+			// localize error
+			resolverErr = r.Localizer.Localize(ctx, resolverErr)
+
 			switch v := resolverErr.(type) {
 			case interface{ Unwrap() []error }:
 				for _, err := range v.Unwrap() {

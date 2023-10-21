@@ -55,6 +55,7 @@ func (s *Schema) subscribe(ctx context.Context, queryString string, operationNam
 		},
 		Limiter:                  make(chan struct{}, s.maxParallelism),
 		Tracer:                   s.tracer,
+		Localizer:                s.localizer,
 		Logger:                   s.logger,
 		PanicHandler:             s.panicHandler,
 		SubscribeResolverTimeout: s.subscribeResolverTimeout,

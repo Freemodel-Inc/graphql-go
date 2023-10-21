@@ -30,6 +30,7 @@ func ParseSchema(schemaString string, resolver interface{}, opts ...SchemaOpt) (
 		schema:         schema.New(),
 		maxParallelism: 10,
 		tracer:         noop.Tracer{},
+		localizer:      errors.LocalizerFunc(func(ctx context.Context, err error) error { return err }),
 		logger:         &log.DefaultLogger{},
 		panicHandler:   &errors.DefaultPanicHandler{},
 	}
@@ -82,6 +83,7 @@ type Schema struct {
 	maxParallelism           int
 	tracer                   tracer.Tracer
 	validationTracer         tracer.ValidationTracer
+	localizer                errors.Localizer
 	logger                   log.Logger
 	panicHandler             errors.PanicHandler
 	useStringDescriptions    bool
@@ -120,6 +122,17 @@ func UseStringDescriptions() SchemaOpt {
 func UseFieldResolvers() SchemaOpt {
 	return func(s *Schema) {
 		s.useFieldResolvers = true
+	}
+}
+
+// Localizer allows for a custom error converter to be applied
+func Localizer(localizer errors.Localizer) SchemaOpt {
+	if localizer == nil {
+		return func(s *Schema) {} // nop
+	}
+
+	return func(s *Schema) {
+		s.localizer = localizer
 	}
 }
 
@@ -312,6 +325,7 @@ func (s *Schema) exec(ctx context.Context, queryString string, operationName str
 		},
 		Limiter:      make(chan struct{}, s.maxParallelism),
 		Tracer:       s.tracer,
+		Localizer:    s.localizer,
 		Logger:       s.logger,
 		PanicHandler: s.panicHandler,
 	}
